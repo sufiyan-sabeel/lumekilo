@@ -1,9 +1,23 @@
-import { Image } from 'expo-image';
+import { Image, type ImageSource } from 'expo-image';
 import { View } from 'react-native';
 
-// Display the supplied reference's portrait regions without resampling its assets.
-const top = [481, 653, 824, 995, 1164];
+// Demo conversation avatars. These ship with the app, so the messages tab and
+// its design preview render the same portraits without depending on the
+// original project's `design/` reference screenshots (which are not app assets
+// and are not bundled).
+const avatars: ImageSource[] = [
+  require('../../assets/images/chat/avatar.png'),
+  require('../../assets/images/feed/maya.png'),
+  require('../../assets/images/feed/jordan.png'),
+  require('../../assets/images/feed/taylor.png'),
+  require('../../assets/images/feed/casey.png'),
+];
+
 export function DemoMessageAvatar({ index, size }: { index: number; size: number }) {
-  const scale = size / 116;
-  return <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }}><Image source={require('../../design/messages-tab-ref.png')} style={{ position: 'absolute', width: 941 * scale, height: 1672 * scale, left: -150 * scale, top: -top[index] * scale }} contentFit="fill" /></View>;
+  const source = avatars[index] ?? avatars[0];
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }}>
+      <Image source={source} style={{ width: size, height: size }} contentFit="cover" />
+    </View>
+  );
 }

@@ -53,7 +53,8 @@
         {
           "url": "https://sentry.io/",
           "project": "lumekilo",
-          "organization": "lumekilo"
+          "organization": "lumekilo",
+          "disableAutoUpload": true
         }
       ]
     ],
