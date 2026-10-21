@@ -1,0 +1,98 @@
+name: Android Release APK
+
+# Builds a signed, installable release APK on GitHub's runners and attaches it
+# to a GitHub Release. Trigger it manually (Actions -> Run workflow) or by
+# pushing a version tag such as `v1.0.0`.
+#
+# The EXPO_PUBLIC_* values are read from repository *variables*
+# (Settings -> Secrets and variables -> Actions -> Variables). They are baked
+# into the client bundle, so treat them as public. If they are empty the APK
+# still builds and installs, but the app will show a configuration error on
+# launch until you set them.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag to publish (e.g. v1.0.0)"
+        required: false
+        default: "v1.0.0"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate the native Android project
+        run: npx expo prebuild --platform android --no-install
+        env:
+          EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          EXPO_PUBLIC_CONVEX_URL: ${{ vars.EXPO_PUBLIC_CONVEX_URL }}
+          EXPO_PUBLIC_CONVEX_SITE_URL: ${{ vars.EXPO_PUBLIC_CONVEX_SITE_URL }}
+
+      - name: Build the release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        env:
+          EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          EXPO_PUBLIC_CONVEX_URL: ${{ vars.EXPO_PUBLIC_CONVEX_URL }}
+          EXPO_PUBLIC_CONVEX_SITE_URL: ${{ vars.EXPO_PUBLIC_CONVEX_SITE_URL }}
+
+      - name: Collect the APK
+        id: collect
+        run: |
+          set -euo pipefail
+          mkdir -p apk
+          TAG="${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}"
+          SRC=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          if [ -z "$SRC" ]; then
+            echo "No APK was produced." >&2
+            exit 1
+          fi
+          cp "$SRC" "apk/lumekilo-${TAG}.apk"
+          ls -lh apk
+
+      - name: Upload the APK as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lumekilo-release-apk
+          path: apk/*.apk
+
+      - name: Publish a GitHub Release with the APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          name: LumeKilo ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          files: apk/*.apk
+          generate_release_notes: true
+          body: |
+            LumeKilo Android release build.
+
+            Built automatically by GitHub Actions from this repository. The APK
+            is signed with the Android debug key, which is fine for testing and
+            sideloading; configure a production keystore before publishing to
+            Google Play.
