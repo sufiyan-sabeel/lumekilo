@@ -67,10 +67,20 @@ jobs:
           done
           ls -1 "$ANDROID_HOME/ndk"
 
+      - name: Raise the Gradle JVM heap
+        run: |
+          set -euo pipefail
+          GP=android/gradle.properties
+          touch "$GP"
+          sed -i '/^org\.gradle\.jvmargs=/d' "$GP"
+          echo 'org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8' >> "$GP"
+          grep -n jvmargs "$GP"
+
       - name: Build the release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon --stacktrace
         env:
+          GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m"
           EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           EXPO_PUBLIC_CONVEX_URL: ${{ vars.EXPO_PUBLIC_CONVEX_URL }}
           EXPO_PUBLIC_CONVEX_SITE_URL: ${{ vars.EXPO_PUBLIC_CONVEX_SITE_URL }}
