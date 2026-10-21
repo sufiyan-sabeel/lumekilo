@@ -54,6 +54,19 @@ jobs:
           EXPO_PUBLIC_CONVEX_URL: ${{ vars.EXPO_PUBLIC_CONVEX_URL }}
           EXPO_PUBLIC_CONVEX_SITE_URL: ${{ vars.EXPO_PUBLIC_CONVEX_SITE_URL }}
 
+      - name: Install the Android NDK
+        run: |
+          set -euo pipefail
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKM" ] || SDKM="$(command -v sdkmanager)"
+          yes | "$SDKM" --licenses >/dev/null 2>&1 || true
+          for attempt in 1 2 3; do
+            if "$SDKM" --install "ndk;27.1.12297006"; then break; fi
+            echo "sdkmanager attempt $attempt failed, retrying..."
+            sleep 15
+          done
+          ls -1 "$ANDROID_HOME/ndk"
+
       - name: Build the release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon --stacktrace
