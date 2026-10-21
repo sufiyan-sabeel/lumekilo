@@ -72,9 +72,14 @@ jobs:
           set -euo pipefail
           GP=android/gradle.properties
           touch "$GP"
+          # Expo writes gradle.properties without a trailing newline; add one so
+          # the appended setting is not glued onto the previous property.
+          [ -z "$(tail -c 1 "$GP")" ] || printf '\n' >> "$GP"
           sed -i '/^org\.gradle\.jvmargs=/d' "$GP"
-          echo 'org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8' >> "$GP"
-          grep -n jvmargs "$GP"
+          printf 'org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8\n' >> "$GP"
+          echo '--- last lines of gradle.properties ---'
+          tail -n 4 "$GP"
+          echo "jvmargs lines: $(grep -c '^org.gradle.jvmargs=' "$GP" || true)"
 
       - name: Build the release APK
         working-directory: android
