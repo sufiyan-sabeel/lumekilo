@@ -1,0 +1,69 @@
+import { useMutation } from 'convex/react';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { api, errorMessage, type SocialPost, type SocialProfile } from '@/lib/social';
+import { FeedIcon } from '../feed-icon';
+import { Avatar, PostMedia } from './media';
+import { DetailActions } from './post-detail-actions';
+import { ui } from './ui';
+
+export function FollowButton({ profile, compactScale }: { profile: SocialProfile; compactScale?: number }) {
+  const setFollow = useMutation(api.social.setFollow);
+  const [pending, setPending] = useState<boolean | null>(null);
+  const following = pending ?? profile.isFollowing;
+  if (profile.isOwn) return null;
+  async function toggle() {
+    if (pending !== null) return; const next = !following; setPending(next);
+    try { await setFollow({ profileId: profile._id, following: next }); }
+    catch (e) { Alert.alert('Could not update follow', errorMessage(e)); }
+    finally { setPending(null); }
+  }
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${following ? 'Unfollow' : 'Follow'} ${profile.username}`} accessibilityState={{ selected: following, disabled: pending !== null }} disabled={pending !== null} onPress={() => void toggle()} style={{ backgroundColor: following ? '#26282C' : '#3AA0FF', paddingVertical: 9, paddingHorizontal: 14, borderRadius: 18, ...(compactScale ? { width: 57 * compactScale, height: 19 * compactScale, paddingVertical: 0, paddingHorizontal: 0, alignItems: 'center', justifyContent: 'center' } : {}) }}><Text style={{ color: following ? '#8B929C' : 'white', fontSize: compactScale ? 8.6 * compactScale : 12, fontWeight: compactScale ? '500' : '600' }}>{following ? 'Following' : 'Follow'}</Text></Pressable>;
+}
+export function PostCard({ post, visible = false, onComments, detail = false, home = false }: { post: SocialPost; visible?: boolean; onComments?: () => void; detail?: boolean; home?: boolean }) {
+  const { width, height } = useWindowDimensions(); const s = detail || home ? width / 390 : 1; const v = height / 916;
+  const tags = detail || home ? [...new Set(post.caption.match(/#[\p{L}\p{N}_]+/gu) ?? [])] : [];
+  const caption = detail || home ? post.caption.replace(/#[\p{L}\p{N}_]+/gu, '').replace(/[ \t]{2,}/g, ' ').trim() : post.caption;
+  const router = useRouter(); const like = useMutation(api.social.setLike); const remove = useMutation(api.posts.remove);
+  const [pending, setPending] = useState<boolean | null>(null); const liked = pending ?? post.isLiked;
+  const likes = post.likesCount + (liked === post.isLiked ? 0 : liked ? 1 : -1);
+  async function toggleLike() {
+    if (pending !== null) return; setPending(!liked);
+    try { await like({ postId: post._id, liked: !liked }); } catch (e) { Alert.alert('Could not update like', errorMessage(e)); } finally { setPending(null); }
+  }
+  function options() {
+    if (!post.isOwn) return;
+    Alert.alert('Delete post?', 'This removes the post, its media, likes, and comments.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => { void remove({ id: post._id }).catch(e => Alert.alert('Could not delete post', errorMessage(e))); } }]);
+  }
+  const member = () => router.push({ pathname: '/member/[id]', params: { id: post.author._id } });
+  const comments = () => onComments ? onComments() : router.push({ pathname: '/post/[id]', params: { id: post._id } });
+  if (home) {
+    const [title, ...body] = caption.split('\n');
+    const elapsed = Math.max(0, Date.now() - post._creationTime);
+    const time = elapsed < 3600000 ? `${Math.max(1, Math.floor(elapsed / 60000))}m ago` : elapsed < 86400000 ? `${Math.floor(elapsed / 3600000)}h ago` : `${Math.floor(elapsed / 86400000)}d ago`;
+    return <View style={{ backgroundColor: '#141417', marginHorizontal: 8 * s, marginBottom: 9 * v, borderRadius: 16 * s, paddingHorizontal: 5 * s, paddingBottom: 5 * v, boxShadow: '0px 3px 10px #1A284009' }}>
+      <View style={{ height: 50 * v, paddingHorizontal: 4 * s, flexDirection: 'row', alignItems: 'center', gap: 10 * s }}><Pressable accessibilityLabel={`View ${post.author.username}`} onPress={member}><Avatar profile={post.author} size={39 * s} /></Pressable><Pressable onPress={member} style={{ flex: 1, gap: 3 * v }}><Text numberOfLines={1} style={{ color: '#F2F3F5', fontWeight: '700', fontSize: 13 * s, letterSpacing: -0.3 * s }}>{post.author.username}</Text><Text numberOfLines={1} style={{ color: '#8B929C', fontSize: 10 * s }}>{time}{post.author.location ? ` · ${post.author.location}` : ''}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Post options" onPress={post.isOwn ? options : comments} hitSlop={10} style={{ padding: 6 * s }}><Text style={{ fontSize: 15 * s, letterSpacing: 1.4, color: '#8B929C' }}>•••</Text></Pressable></View>
+      <PostMedia post={post} visible={visible} />
+      <View style={{ paddingHorizontal: 5 * s, paddingTop: 9 * s, paddingBottom: 3 * s }}>
+        <Text numberOfLines={2} style={{ color: '#F2F3F5', fontSize: 11.8 * s, fontWeight: '500', letterSpacing: -0.25 * s, lineHeight: 17 * s }}>{title}</Text>
+        {!!body.join('').trim() && <Text numberOfLines={1} style={{ color: '#8B929C', fontSize: 10.5 * s, lineHeight: 15 * v }}>{body.join(' ')}</Text>}
+        {!!tags.length && <View style={{ flexDirection: 'row', gap: 5 * s, paddingVertical: 4 * v }}>{tags.slice(0, 4).map(tag => <Pressable key={tag} accessibilityLabel={`Explore ${tag}`} onPress={() => router.navigate('/explore')} style={{ backgroundColor: '#12293C', borderRadius: 12 * s, paddingHorizontal: 8 * s, paddingVertical: 3 * v }}><Text style={{ fontSize: 9 * s, color: '#7FC4FF' }}>{tag}</Text></Pressable>)}</View>}
+        <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 40 * s, gap: 16 * s, marginTop: 6 * s }}><Pressable accessibilityRole="button" accessibilityLabel={liked ? 'Unlike post' : 'Like post'} accessibilityState={{ selected: liked }} disabled={pending !== null} onPress={() => void toggleLike()} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 * s }}><FeedIcon name="heart" size={18 * s} color={liked ? '#FF5C7A' : '#F2F3F5'} filled={liked} /><Text style={{ fontSize: 11 * s, color: '#F2F3F5' }}>{Math.max(0, likes)}</Text></Pressable><Pressable accessibilityLabel="View comments" onPress={comments} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 * s }}><FeedIcon name="comment" size={18 * s} /><Text style={{ fontSize: 11 * s, color: '#F2F3F5' }}>{post.commentsCount}</Text></Pressable><DetailActions post={post} scale={0.78 * s} /></View>
+      </View>
+    </View>;
+  }
+  return <View style={detail ? { backgroundColor: '#141417', paddingHorizontal: 10, paddingTop: 8 } : { backgroundColor: '#141417', marginHorizontal: 10, marginBottom: 12, padding: 8, borderRadius: 18, boxShadow: '0px 3px 10px #1A284009' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 4, paddingBottom: 12 }}><Pressable accessibilityLabel={`View ${post.author.username}`} onPress={member}><Avatar profile={post.author} /></Pressable><Pressable onPress={member} style={{ flex: 1 }}><Text style={{ color: '#F2F3F5', fontWeight: '700', fontSize: 14 }}>{post.author.username}</Text><Text style={{ color: '#8B929C', fontSize: 11, marginTop: 3 }}>{post.author.isDemo ? 'Demo · ' : ''}{new Date(post._creationTime).toLocaleDateString()}{post.author.location ? ` · ${post.author.location}` : ''}</Text></Pressable>{post.isOwn ? <Pressable accessibilityRole="button" accessibilityLabel="Delete your post" onPress={options} hitSlop={12} style={{ padding: 8 }}><Text style={ui.muted}>•••</Text></Pressable> : <FollowButton profile={post.author} />}</View>
+    <PostMedia post={post} visible={visible} />
+    <View style={{ paddingHorizontal: detail ? 10 * s : 7, paddingTop: detail ? 12 * s : 7, paddingBottom: detail ? 10 * s : 7, gap: 10 * s }}>
+      {!!caption && <Text style={detail ? { color: '#F2F3F5', fontSize: 16 * s, lineHeight: 22 * s, letterSpacing: -0.3 } : ui.text}>{caption}</Text>}
+      {!!tags.length && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 * s }}>{tags.map(tag => <View key={tag} style={{ backgroundColor: '#12293C', borderRadius: 18 * s, paddingVertical: 6 * s, paddingHorizontal: 11 * s }}><Text style={{ color: '#3AA0FF', fontSize: 12 * s, fontWeight: '500' }}>{tag}</Text></View>)}</View>}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: (detail ? 20 : 24) * s, paddingLeft: detail ? 8 * s : 0, marginTop: detail ? 4 * s : 0 }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={liked ? 'Unlike post' : 'Like post'} accessibilityState={{ selected: liked }} disabled={pending !== null} onPress={() => void toggleLike()} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 * s, minHeight: 36 * s, width: detail ? 68 * s : undefined }}><FeedIcon name="heart" size={(detail ? 25 : 22) * s} filled={liked} color={liked ? '#FF5C7A' : '#F2F3F5'} /><Text style={detail ? { fontSize: 14 * s, fontWeight: '600', color: '#F2F3F5' } : ui.text}>{Math.max(0, likes)}</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="View comments" onPress={comments} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 * s, minHeight: 36 * s, width: detail ? 62 * s : undefined }}><FeedIcon name="comment" size={(detail ? 24 : 21) * s} color="#F2F3F5" /><Text style={detail ? { fontSize: 14 * s, fontWeight: '600', color: '#F2F3F5' } : ui.text}>{post.commentsCount}</Text></Pressable>
+        {detail && <DetailActions post={post} scale={s} />}
+      </View>
+    </View>
+  </View>;
+}
