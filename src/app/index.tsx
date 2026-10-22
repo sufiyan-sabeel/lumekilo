@@ -1,5 +1,4 @@
 import { EmailAuthSheet } from '@/components/email-auth-sheet';
-import { FeedIcon } from '@/components/feed-icon';
 import { useSocialAuth } from '@/hooks/use-social-auth';
 import { openLegalDocument } from '@/lib/legal-links';
 import { Image } from "expo-image";
@@ -18,9 +17,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const palette = { background: "#0A0A0B", ink: "#F2F3F5", blue: "#3AA0FF", muted: "#8B929C" };
-const googleMark = {
-  uri: `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#4285F4" d="M43.6 24.5c0-1.5-.1-2.9-.4-4.3H24v8.1h11a9.4 9.4 0 0 1-4.1 6.2v5.2h6.7c3.9-3.6 6-8.8 6-15.2Z"/><path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.7-5.2c-1.8 1.2-4.1 1.9-6.8 1.9-5.3 0-9.8-3.6-11.4-8.4H5.7v5.4A20.4 20.4 0 0 0 24 44Z"/><path fill="#FBBC05" d="M12.6 27.4a12.2 12.2 0 0 1 0-7.8v-5.4H5.7a20 20 0 0 0 0 18.6l6.9-5.4Z"/><path fill="#EA4335" d="M24 11.2c3 0 5.6 1 7.7 3l5.8-5.8A19.4 19.4 0 0 0 24 3a20.4 20.4 0 0 0-18.3 11.2l6.9 5.4c1.6-4.8 6.1-8.4 11.4-8.4Z"/></svg>')}`,
-};
 
 function Chevron() {
   return (
@@ -122,7 +118,7 @@ export default function Index() {
               style={({ pressed }) => [styles.button, pressed && styles.pressed]}
             >
               <View style={styles.buttonIcon}>
-                <Image source={googleMark} style={styles.brandIcon} contentFit="contain" />
+                <Image source={require("../../assets/images/google-g.png")} style={styles.brandIcon} contentFit="contain" />
               </View>
               <Text style={styles.buttonLabel}>Continue with Google</Text>
               <Chevron />
@@ -134,7 +130,7 @@ export default function Index() {
               style={({ pressed }) => [styles.button, pressed && styles.pressed]}
             >
               <View style={styles.buttonIcon}>
-                <FeedIcon name="mail" size={24} color={palette.ink} />
+                <Image source={require("../../assets/images/mail.png")} style={styles.brandIcon} contentFit="contain" />
               </View>
               <Text style={styles.buttonLabel}>Continue with email</Text>
               <Chevron />
