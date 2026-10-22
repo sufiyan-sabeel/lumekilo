@@ -61,7 +61,7 @@ export const spacing = {
   xxl: 32,
 } as const;
 
-export const type = {
+export const typography = {
   display: { fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
   title: { fontSize: 23, fontWeight: '700', letterSpacing: -0.6 },
   heading: { fontSize: 18, fontWeight: '700', letterSpacing: -0.4 },
@@ -82,5 +82,5 @@ export const elevation = {
   },
 } as const;
 
-export const theme = { palette, radius, spacing, type, elevation } as const;
+export const theme = { palette, radius, spacing, typography, elevation } as const;
 export default theme;

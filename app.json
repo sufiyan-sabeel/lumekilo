@@ -2,7 +2,7 @@
   "expo": {
     "name": "LumeKilo",
     "slug": "lumekilo",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "lumekilo",
@@ -21,6 +21,7 @@
         "foregroundImage": "./assets/images/logo.png"
       },
       "predictiveBackGestureEnabled": false,
+      "versionCode": 2,
       "package": "com.lumekilo.app"
     },
     "web": {

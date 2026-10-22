@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 
-export type IconName = 'bell' | 'lock' | 'blocked' | 'help' | 'support' | 'document' | 'chevron-right' | 'trash' | 'compose' | 'info' | 'search' | 'plus' | 'heart' | 'comment' | 'send' | 'bookmark' | 'home' | 'explore' | 'profile' | 'close' | 'grid' | 'video' | 'tagged' | 'person-plus' | 'back' | 'camera' | 'bio' | 'link' | 'location' | 'sign-out' | 'settings' | 'phone' | 'video-call' | 'photo' | 'check' | 'double-check' | 'chat-send';
+export type IconName = 'bell' | 'lock' | 'blocked' | 'help' | 'support' | 'document' | 'chevron-right' | 'trash' | 'compose' | 'info' | 'search' | 'plus' | 'heart' | 'comment' | 'send' | 'bookmark' | 'home' | 'explore' | 'profile' | 'close' | 'grid' | 'video' | 'tagged' | 'person-plus' | 'back' | 'camera' | 'bio' | 'link' | 'location' | 'sign-out' | 'settings' | 'phone' | 'video-call' | 'photo' | 'check' | 'double-check' | 'chat-send' | 'mail' | 'eye' | 'eye-off';
 const paths: Record<IconName, string> = {
   bell: '<path d="M4 18h16l-2-3V9a6 6 0 0 0-12 0v6l-2 3ZM10 21a3 3 0 0 0 4 0"/>',
   lock: '<rect x="4" y="10" width="16" height="12" rx="2"/><path d="M7 10V6a5 5 0 0 1 10 0v4M12 15v2"/>',
@@ -40,6 +40,9 @@ const paths: Record<IconName, string> = {
   'double-check': '<path d="m2 12 5 5L17 6M11 16l2 2L23 7"/>',
   'chat-send': '<path d="m22 2-7 20-5-9-9-4 21-7Z" fill="white"/><path d="m10 13 8-7" stroke="#3AA0FF"/>',
   close: '<path d="m5 5 14 14M5 19 19 5"/>',
+  mail: '<rect x="2.5" y="4.5" width="19" height="15" rx="3.5"/><path d="m3.5 7 8.5 6 8.5-6"/>',
+  eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/>',
+  'eye-off': '<path d="M4 4l16 16M9.9 5.7A9.9 9.9 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-2.6 3.4M6.5 8.1A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1 0 1.9-.2 2.7-.5"/>',
 };
 export function FeedIcon({ name, size = 24, color = '#F2F3F5', filled = false }: { name: IconName; size?: number; color?: string; filled?: boolean }) {
   const uri = `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${filled ? color : 'none'}" stroke="${color}" stroke-width="${name === 'grid' ? 2.6 : 1.9}" stroke-linecap="round" stroke-linejoin="round">${paths[name]}</svg>`)}`;

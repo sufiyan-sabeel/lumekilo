@@ -4,21 +4,24 @@ import { useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { authErrorMessage } from '@/lib/auth-errors';
 
-export type AuthProvider = 'Google' | 'Apple';
-
+/**
+ * Google sign-in through Clerk's OAuth flow.
+ *
+ * Email + password sign-in/sign-up lives in `use-email-auth.ts`.
+ */
 export function useSocialAuth() {
   const { isLoaded } = useAuth();
   const { startSSOFlow } = useSSO();
   const inFlight = useRef(false);
-  const [pendingProvider, setPendingProvider] = useState<AuthProvider | null>(null);
+  const [pending, setPending] = useState(false);
 
-  async function signIn(provider: AuthProvider) {
+  async function signInWithGoogle() {
     if (!isLoaded || inFlight.current) return;
     inFlight.current = true;
-    setPendingProvider(provider);
+    setPending(true);
     try {
       const result = await startSSOFlow({
-        strategy: provider === 'Google' ? 'oauth_google' : 'oauth_apple',
+        strategy: 'oauth_google',
         redirectUrl: makeRedirectUri({ scheme: 'lumekilo', path: 'sso-callback' }),
       });
       // A dismissed browser is an intentional cancellation, not a failed login.
@@ -36,9 +39,9 @@ export function useSocialAuth() {
       if (message) Alert.alert('Unable to sign in', message);
     } finally {
       inFlight.current = false;
-      setPendingProvider(null);
+      setPending(false);
     }
   }
 
-  return { signIn, pendingProvider, isReady: isLoaded };
+  return { signInWithGoogle, pending, isReady: isLoaded };
 }

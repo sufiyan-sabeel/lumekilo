@@ -15,7 +15,7 @@ identity, design system and configuration are LumeKilo's own.
 | --- | --- |
 | App | Expo (SDK 57) + Expo Router, React Native 0.86, React 19 |
 | Language | TypeScript (strict) |
-| Auth | Clerk (`@clerk/expo`) with Google and Apple SSO |
+| Auth | Clerk (`@clerk/expo`) with Google SSO and email/password |
 | Backend | Convex (queries, mutations, HTTP routes, file storage) |
 | Monitoring | Sentry (optional, disabled unless a DSN is provided) |
 | Tests | Vitest + `convex-test` (backend), TypeScript for the client |
@@ -89,7 +89,7 @@ npm run seed          # seed demo profiles and posts
 
 ## Features
 
-- **Authentication** — Google/Apple SSO via Clerk, with a profile onboarding
+- **Authentication** — Google SSO and email/password via Clerk, with a profile onboarding
   step and a full account-deletion flow (request → cleanup → complete).
 - **Home feed** — paginated posts (image and video) with stories, likes,
   comments, bookmarks, share and per-post options.

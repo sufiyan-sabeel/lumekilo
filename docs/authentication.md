@@ -1,6 +1,6 @@
 # Authentication
 
-The welcome screen uses Clerk’s combined Google/Apple sign-in and sign-up flow. Existing users sign in; new users get an account through the same buttons.
+The welcome screen offers two ways in: **Continue with Google** (Clerk OAuth) and **Continue with email** (email + password sign-in / sign-up). Existing users sign in; new users create an account from the same sheet.
 
 ## Local development
 
@@ -10,7 +10,7 @@ The welcome screen uses Clerk’s combined Google/Apple sign-in and sign-up flow
 
 The development app identifier is `com.burakorkmez.lumekilo`. The callback is `lumekilo://sso-callback`, registered with the development Clerk instance. The custom callback requires this app’s development build, not Expo Go.
 
-Clerk Native API, Google, and Apple are enabled on the linked development instance. No additional profile fields are required by this instance. Changing required fields, MFA, or session tasks requires extending the completion UI.
+Clerk Native API and Google are enabled on the linked development instance; email + password is enabled as well. No additional profile fields are required by this instance. Changing required fields, MFA, or session tasks requires extending the completion UI.
 
 ## Session behavior
 
@@ -32,9 +32,29 @@ See [Clerk Expo quickstart](https://clerk.com/docs/expo/getting-started/quicksta
 ## Manual acceptance check
 
 1. Tap each provider and cancel; the welcome screen must remain usable.
-2. Complete Google or Apple authentication; verify the account name/email and sign-out control.
+2. Complete Google authentication, or create an account with email + password (including the emailed code when verification is on); verify the account name/email and sign-out control.
 3. Terminate and relaunch the app; the account must remain signed in.
 4. Sign out; navigating directly to `lumekilo://home` must return to the welcome screen.
 5. Repeat with a new account to verify automatic signup.
 
 Provider credentials and account verification should be entered by the account owner. A provider round-trip is not verified until those steps have completed.
+
+
+## Required Clerk and Convex configuration
+
+The client authenticates to Convex with a Clerk-issued JWT. Two things must be
+true or the app shows *"Unable to authenticate with Convex"* after a successful
+sign-in:
+
+1. **Clerk → Convex integration enabled.** In the Clerk dashboard open
+   **Configure → Integrations → Convex** and activate it. This creates a JWT
+   template named `convex` whose `aud` claim is `convex` — the name
+   `ConvexProviderWithClerk` requests via `getToken({ template: 'convex' })`,
+   and the `applicationID` in `convex/auth.config.ts`.
+2. **`CLERK_JWT_ISSUER_DOMAIN` set on the Convex deployment.** Copy the issuer
+   URL from the same Clerk integration page (for a development instance it looks
+   like `https://<your-instance>.clerk.accounts.dev`) and set it as an
+   environment variable on the Convex deployment, **not** as an `EXPO_PUBLIC_*`
+   value. Setting it triggers a redeploy of the backend.
+
+Because the JWT template name is fixed at `convex`, do not rename it.

@@ -1,11 +1,13 @@
+import { EmailAuthSheet } from '@/components/email-auth-sheet';
+import { FeedIcon } from '@/components/feed-icon';
 import { useSocialAuth } from '@/hooks/use-social-auth';
 import { openLegalDocument } from '@/lib/legal-links';
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import {
   Alert,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,7 +23,8 @@ const googleMark = {
 };
 
 export default function Index() {
-  const { signIn, pendingProvider, isReady } = useSocialAuth();
+  const { signInWithGoogle, pending, isReady } = useSocialAuth();
+  const [emailOpen, setEmailOpen] = useState(false);
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const scale = Math.min(width / 390, 1.3);
@@ -99,31 +102,36 @@ export default function Index() {
             accessibilityLabel="Good people are built with great people."
           />
           <View style={styles.buttons}>
-            {(["Google", "Apple"] as const).map((provider) => (
-              <Pressable
-                key={provider}
-                accessibilityRole="button"
-                accessibilityLabel={`Continue with ${provider}`} accessibilityState={{ disabled: !isReady || !!pendingProvider, busy: pendingProvider === provider }} disabled={!isReady || !!pendingProvider} onPress={() => signIn(provider)}
-                style={({ pressed }) => [
-                  styles.button,
-                  provider === "Apple" && styles.appleButton,
-                  pressed && styles.pressed,
-                ]}
-              >
-                {provider === "Google" ? (
-                  <Image source={googleMark} style={styles.providerIcon} />
-                ) : (
-                  <Text style={styles.appleIcon}>{Platform.OS === "ios" ? "\uF8FF" : "●"}</Text>
-                )}
-                <Text style={[styles.buttonLabel, provider === "Apple" && styles.white]}>
-                  Continue with {provider}
-                </Text>
-                <View style={styles.arrow}>
-                  <View style={[styles.arrowShaft, provider === "Apple" && styles.lightArrow]} />
-                  <View style={[styles.arrowTip, provider === "Apple" && styles.lightArrowTip]} />
-                </View>
-              </Pressable>
-            ))}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continue with Google"
+              accessibilityState={{ disabled: !isReady || pending, busy: pending }}
+              disabled={!isReady || pending}
+              onPress={() => void signInWithGoogle()}
+              style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+            >
+              <Image source={googleMark} style={styles.providerIcon} />
+              <Text style={styles.buttonLabel}>Continue with Google</Text>
+              <View style={styles.arrow}>
+                <View style={styles.arrowShaft} />
+                <View style={styles.arrowTip} />
+              </View>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continue with email"
+              onPress={() => setEmailOpen(true)}
+              style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+            >
+              <View style={styles.providerIcon}>
+                <FeedIcon name="mail" size={23} color={palette.ink} />
+              </View>
+              <Text style={styles.buttonLabel}>Continue with email</Text>
+              <View style={styles.arrow}>
+                <View style={styles.arrowShaft} />
+                <View style={styles.arrowTip} />
+              </View>
+            </Pressable>
           </View>
           <Text style={styles.legal}>
             By continuing, you agree to our{" "}
@@ -141,6 +149,7 @@ export default function Index() {
           </Text>
         </View>
       </ScrollView>
+      <EmailAuthSheet visible={emailOpen} onClose={() => setEmailOpen(false)} />
     </View>
   );
 }
@@ -179,15 +188,6 @@ const styles = StyleSheet.create({
     color: palette.ink,
   },
   blue: { color: palette.blue },
-  subtitle: {
-    position: "absolute",
-    top: 312,
-    width: "100%",
-    textAlign: "center",
-    fontSize: 15,
-    letterSpacing: -0.3,
-    color: palette.muted,
-  },
   artwork: { position: "absolute", top: 338, left: 0, width: 390, height: 280, overflow: "hidden" },
   blueShape: {
     position: "absolute",
@@ -202,29 +202,27 @@ const styles = StyleSheet.create({
   mountain: { position: "absolute", left: -25, top: 22, width: 404, height: 250, opacity: 0.67 },
   fade: { position: "absolute", bottom: -1, width: "100%", height: 76 },
   note: { position: "absolute", top: 364, right: 10, width: 118, height: 72 },
-  buttons: { position: "absolute", top: 615, left: 27, right: 27, gap: 11 },
+  buttons: { position: "absolute", top: 611, left: 27, right: 27, gap: 12 },
   button: {
-    height: 55,
-    borderRadius: 30,
-    backgroundColor: "#0A0A0B",
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#141417",
+    borderWidth: 1,
+    borderColor: "#26282C",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 3px 12px rgba(26, 39, 65, 0.09)",
   },
-  appleButton: { backgroundColor: "#0D0F11" },
-  pressed: { opacity: 0.7, transform: [{ scale: 0.98 }] },
-  providerIcon: { position: "absolute", left: 25, width: 29, height: 29 },
-  appleIcon: {
+  pressed: { opacity: 0.75, transform: [{ scale: 0.985 }] },
+  providerIcon: {
     position: "absolute",
-    left: 29,
-    top: 8,
-    color: "#FFFFFF",
-    fontSize: 32,
-    lineHeight: 37,
+    left: 22,
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  buttonLabel: { color: palette.ink, fontSize: 15, fontWeight: "600", letterSpacing: -0.25 },
-  white: { color: "#FFFFFF" },
-  arrow: { position: "absolute", right: 28, width: 16, height: 20, justifyContent: "center" },
+  buttonLabel: { color: palette.ink, fontSize: 15.5, fontWeight: "600", letterSpacing: -0.25 },
+  arrow: { position: "absolute", right: 26, width: 16, height: 20, justifyContent: "center" },
   arrowShaft: { height: 1.6, width: 14, borderRadius: 1, backgroundColor: palette.muted },
   arrowTip: {
     position: "absolute",
@@ -236,8 +234,6 @@ const styles = StyleSheet.create({
     borderColor: palette.muted,
     transform: [{ rotate: "45deg" }],
   },
-  lightArrow: { backgroundColor: "#5A5F66" },
-  lightArrowTip: { borderColor: "#5A5F66" },
   legal: {
     position: "absolute",
     top: 758,
