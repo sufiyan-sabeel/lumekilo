@@ -22,6 +22,17 @@ const googleMark = {
   uri: `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#4285F4" d="M43.6 24.5c0-1.5-.1-2.9-.4-4.3H24v8.1h11a9.4 9.4 0 0 1-4.1 6.2v5.2h6.7c3.9-3.6 6-8.8 6-15.2Z"/><path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.7-5.2c-1.8 1.2-4.1 1.9-6.8 1.9-5.3 0-9.8-3.6-11.4-8.4H5.7v5.4A20.4 20.4 0 0 0 24 44Z"/><path fill="#FBBC05" d="M12.6 27.4a12.2 12.2 0 0 1 0-7.8v-5.4H5.7a20 20 0 0 0 0 18.6l6.9-5.4Z"/><path fill="#EA4335" d="M24 11.2c3 0 5.6 1 7.7 3l5.8-5.8A19.4 19.4 0 0 0 24 3a20.4 20.4 0 0 0-18.3 11.2l6.9 5.4c1.6-4.8 6.1-8.4 11.4-8.4Z"/></svg>')}`,
 };
 
+function Chevron() {
+  return (
+    <View style={styles.arrow}>
+      <View style={styles.arrowGlyph}>
+        <View style={styles.arrowShaft} />
+        <View style={styles.arrowTip} />
+      </View>
+    </View>
+  );
+}
+
 export default function Index() {
   const { signInWithGoogle, pending, isReady } = useSocialAuth();
   const [emailOpen, setEmailOpen] = useState(false);
@@ -110,12 +121,11 @@ export default function Index() {
               onPress={() => void signInWithGoogle()}
               style={({ pressed }) => [styles.button, pressed && styles.pressed]}
             >
-              <Image source={googleMark} style={styles.providerIcon} />
-              <Text style={styles.buttonLabel}>Continue with Google</Text>
-              <View style={styles.arrow}>
-                <View style={styles.arrowShaft} />
-                <View style={styles.arrowTip} />
+              <View style={styles.buttonIcon}>
+                <Image source={googleMark} style={styles.brandIcon} contentFit="contain" />
               </View>
+              <Text style={styles.buttonLabel}>Continue with Google</Text>
+              <Chevron />
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -123,14 +133,11 @@ export default function Index() {
               onPress={() => setEmailOpen(true)}
               style={({ pressed }) => [styles.button, pressed && styles.pressed]}
             >
-              <View style={styles.providerIcon}>
-                <FeedIcon name="mail" size={23} color={palette.ink} />
+              <View style={styles.buttonIcon}>
+                <FeedIcon name="mail" size={24} color={palette.ink} />
               </View>
               <Text style={styles.buttonLabel}>Continue with email</Text>
-              <View style={styles.arrow}>
-                <View style={styles.arrowShaft} />
-                <View style={styles.arrowTip} />
-              </View>
+              <Chevron />
             </Pressable>
           </View>
           <Text style={styles.legal}>
@@ -203,26 +210,32 @@ const styles = StyleSheet.create({
   fade: { position: "absolute", bottom: -1, width: "100%", height: 76 },
   note: { position: "absolute", top: 364, right: 10, width: 118, height: 72 },
   buttons: { position: "absolute", top: 611, left: 27, right: 27, gap: 12 },
+  // Flex row: the provider mark, a centred label and the chevron. Absolute
+  // positioning inside the scaled canvas did not render the mark reliably on
+  // Android, so everything is laid out in normal flow.
   button: {
     height: 56,
     borderRadius: 28,
     backgroundColor: "#141417",
     borderWidth: 1,
     borderColor: "#26282C",
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 18,
   },
   pressed: { opacity: 0.75, transform: [{ scale: 0.985 }] },
-  providerIcon: {
-    position: "absolute",
-    left: 22,
-    width: 30,
-    height: 30,
-    alignItems: "center",
-    justifyContent: "center",
+  buttonIcon: { width: 26, height: 26, alignItems: "center", justifyContent: "center" },
+  brandIcon: { width: 24, height: 24 },
+  buttonLabel: {
+    flex: 1,
+    textAlign: "center",
+    color: palette.ink,
+    fontSize: 15.5,
+    fontWeight: "600",
+    letterSpacing: -0.25,
   },
-  buttonLabel: { color: palette.ink, fontSize: 15.5, fontWeight: "600", letterSpacing: -0.25 },
-  arrow: { position: "absolute", right: 26, width: 16, height: 20, justifyContent: "center" },
+  arrow: { width: 26, height: 26, alignItems: "center", justifyContent: "center" },
+  arrowGlyph: { width: 16, height: 20, justifyContent: "center" },
   arrowShaft: { height: 1.6, width: 14, borderRadius: 1, backgroundColor: palette.muted },
   arrowTip: {
     position: "absolute",

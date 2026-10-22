@@ -17,7 +17,7 @@ export function ProfileGate({ children }: { children: ReactNode }) {
   const deletion = useQuery(api.accounts.status, isAuthenticated ? {} : 'skip');
   const me = useQuery(api.profiles.me, isAuthenticated ? {} : 'skip');
   if (isLoading || (isAuthenticated && me === undefined)) return <View style={ui.center}><ActivityIndicator color="#3AA0FF" /><Text style={ui.muted}>Loading your profile…</Text></View>;
-  if (!isAuthenticated) return <View style={ui.center}><Text style={ui.title}>Connecting your account</Text><Text style={ui.muted}>Unable to authenticate with Convex. Check your connection and that the Clerk Convex integration is enabled, then sign in again.</Text><Pressable style={ui.button} onPress={() => void signOut()}><Text style={ui.buttonText}>Back to sign in</Text></Pressable></View>;
+  if (!isAuthenticated) return <View style={ui.center}><Text style={ui.title}>Couldn’t reach the backend</Text><Text style={ui.muted}>You are signed in, but LumeKilo could not exchange your session for a Convex token. Enable the Convex integration in Clerk (it creates the “convex” JWT template), set CLERK_JWT_ISSUER_DOMAIN on your Convex deployment, then try again.</Text><Text style={[ui.muted, { fontSize: 12, opacity: 0.7 }]}>Backend: {process.env.EXPO_PUBLIC_CONVEX_URL ?? 'not configured'}</Text><Pressable style={ui.button} onPress={() => void signOut()}><Text style={ui.buttonText}>Back to sign in</Text></Pressable></View>;
   if (deletion) return <DeletionProgress state={deletion.state} error={deletion.error} />;
   if (deletion === undefined) return <View style={ui.center}><ActivityIndicator color="#3AA0FF" /></View>;
   if (!me) return <Onboarding />;
