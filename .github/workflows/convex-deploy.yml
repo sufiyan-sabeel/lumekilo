@@ -1,0 +1,94 @@
+name: Deploy Convex backend
+
+# Pushes the schema and functions in `convex/` to a Convex deployment from CI,
+# and points that deployment at your Clerk issuer so the app can authenticate.
+#
+# One-time setup
+#   1. Convex dashboard -> your project -> Settings -> Deploy Keys -> generate a
+#      key. Use a PRODUCTION deploy key: `convex deploy` targets the deployment
+#      the key belongs to, and a production key targets your production
+#      deployment — which is NOT necessarily the same deployment your app is
+#      pointed at (see the note below).
+#   2. GitHub -> this repo -> Settings -> Secrets and variables -> Actions ->
+#      New repository secret -> name: CONVEX_DEPLOY_KEY
+#   3. Optional: add a repository VARIABLE named CLERK_JWT_ISSUER_DOMAIN if your
+#      Clerk issuer differs from the default below.
+#   4. Actions -> Deploy Convex backend -> Run workflow.
+#
+# NOTE on which deployment gets the backend
+#   EXPO_PUBLIC_CONVEX_URL in the app currently points at your existing
+#   deployment. If that deployment is your project's *dev* deployment, run
+#   `npx convex dev` locally instead (or first) — a production deploy key will
+#   not deploy to it. Keep the URL in the app and the deployment you deploy to
+#   in sync, or the app will sign in and then fail to find any functions.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'convex/**'
+      - '.github/workflows/convex-deploy.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: convex-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy schema and functions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the deploy key is configured
+        id: guard
+        env:
+          DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: |
+          if [ -z "$DEPLOY_KEY" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Convex deploy skipped::CONVEX_DEPLOY_KEY is not set. Add it under Settings -> Secrets and variables -> Actions -> Secrets, then re-run this workflow."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.guard.outputs.configured == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        if: steps.guard.outputs.configured == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.guard.outputs.configured == 'true'
+        run: npm ci --no-audit --no-fund
+
+      - name: Deploy Convex functions and schema
+        if: steps.guard.outputs.configured == 'true'
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: npx convex deploy
+
+      - name: Point the deployment at the Clerk issuer
+        id: issuer
+        if: steps.guard.outputs.configured == 'true'
+        continue-on-error: true
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          ISSUER: ${{ vars.CLERK_JWT_ISSUER_DOMAIN }}
+        run: |
+          set -euo pipefail
+          ISSUER="${ISSUER:-https://infinite-stinkbug-9915.clerk.accounts.dev}"
+          echo "Setting CLERK_JWT_ISSUER_DOMAIN=$ISSUER"
+          npx convex env set CLERK_JWT_ISSUER_DOMAIN "$ISSUER"
+
+      - name: Reminder if the issuer could not be set from CI
+        if: steps.guard.outputs.configured == 'true' && steps.issuer.outcome == 'failure'
+        run: |
+          echo "::warning title=Set CLERK_JWT_ISSUER_DOMAIN manually::The CLI could not set the variable with a deploy key. In the Convex dashboard open your deployment -> Settings -> Environment Variables and add CLERK_JWT_ISSUER_DOMAIN with the value https://infinite-stinkbug-9915.clerk.accounts.dev"

@@ -170,3 +170,41 @@ The workflow runs `npx expo prebuild --platform android` and
 keystore (Expo's default), which is fine for testing and sideloading; add a
 production keystore before publishing to Google Play. Without the variables the
 APK still builds and installs, but the app shows a configuration error at launch.
+
+## Backend (Convex) deployment
+
+The app is only functional once the schema and functions in `convex/` are
+deployed **to the same deployment** `EXPO_PUBLIC_CONVEX_URL` points at.
+
+### Deploy from your machine
+
+```bash
+npm install
+npx convex dev            # logs in, deploys convex/ to your dev deployment
+```
+
+`npx convex dev` prints the deployment URL — that value is
+`EXPO_PUBLIC_CONVEX_URL`. For a production deployment use `npx convex deploy`.
+
+### Let the app authenticate to Convex
+
+The client exchanges its Clerk session for a Convex JWT. Two settings are
+required, or the app signs in and then shows *"Couldn't reach the backend"*:
+
+1. **Clerk → Convex integration.** Clerk dashboard → **Configure → Integrations
+   → Convex** → activate. This creates the JWT template named `convex`
+   (`aud: convex`) that `ConvexProviderWithClerk` asks for and that
+   `convex/auth.config.ts` validates.
+2. **`CLERK_JWT_ISSUER_DOMAIN` on the Convex deployment.** Copy the issuer from
+   that same page (for a development instance it looks like
+   `https://<your-instance>.clerk.accounts.dev`) and add it in the Convex
+   dashboard under **Settings → Environment Variables**. It is a server-side
+   value — never an `EXPO_PUBLIC_*` one.
+
+### Deploy from CI (optional)
+
+`.github/workflows/convex-deploy.yml` deploys `convex/` from GitHub Actions.
+Add a Convex **production** deploy key as the `CONVEX_DEPLOY_KEY` repository
+secret, then run the workflow. Note that a production key targets your
+production deployment, which may not be the deployment the app currently points
+at — keep the two in sync.
