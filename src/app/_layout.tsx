@@ -1,9 +1,9 @@
 import { MessagesProvider } from '@/context/messages-context';
 import { ClerkProvider, useAuth } from '@clerk/expo';
-import { ConvexReactClient } from 'convex/react';
-import { ConvexProviderWithClerk } from 'convex/react-clerk';
+import { ConvexProviderWithAuth, ConvexReactClient } from 'convex/react';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { Stack } from 'expo-router';
+import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 
@@ -54,6 +54,46 @@ const convex = new ConvexReactClient(convexUrl);
 
 Sentry.logger.info('LumeKilo initialized', { platform: Platform.OS });
 
+/**
+ * Bridges Clerk sessions to Convex.
+ *
+ * Preferred path: the Clerk → Convex integration's `convex` JWT template, whose
+ * `aud` claim is `convex` (the `applicationID` in `convex/auth.config.ts`).
+ *
+ * Fallback: if that template is not enabled on the Clerk instance, `getToken`
+ * with a template rejects. A plain Clerk session token is still a valid RS256
+ * JWT issued by the same issuer, and `convex/auth.config.ts` also registers it
+ * as a `customJwt` provider — so we fall back to it rather than leaving the app
+ * stuck on the "couldn't reach the backend" screen.
+ */
+function useAuthFromClerk() {
+  const { isLoaded, isSignedIn, getToken, sessionClaims } = useAuth();
+  const audience = sessionClaims?.aud;
+
+  const fetchAccessToken = useCallback(
+    async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
+      try {
+        if (audience === 'convex') {
+          return await getToken({ skipCache: forceRefreshToken });
+        }
+        try {
+          return await getToken({ template: 'convex', skipCache: forceRefreshToken });
+        } catch {
+          return await getToken({ skipCache: forceRefreshToken });
+        }
+      } catch {
+        return null;
+      }
+    },
+    [getToken, audience],
+  );
+
+  return useMemo(
+    () => ({ isLoading: !isLoaded, isAuthenticated: isSignedIn ?? false, fetchAccessToken }),
+    [isLoaded, isSignedIn, fetchAccessToken],
+  );
+}
+
 function AuthenticatedRoutes() {
   const { isLoaded, isSignedIn, userId } = useAuth();
   if (!isLoaded) {
@@ -83,9 +123,9 @@ function AuthenticatedRoutes() {
 function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+      <ConvexProviderWithAuth client={convex} useAuth={useAuthFromClerk}>
         <AuthenticatedRoutes />
-      </ConvexProviderWithClerk>
+      </ConvexProviderWithAuth>
     </ClerkProvider>
   );
 }
